@@ -5,7 +5,10 @@ CONFIG -= qt
 
 SOURCES += \
         main.c \
-        dspAPI.c
+        C:\Users\user\Desktop\programing\MCU\STM32\jalousieControl\jalousieControl\src\dspAPI.c
 
 HEADERS  += \
-             dspAPI.h
+             C:\Users\user\Desktop\programing\MCU\STM32\jalousieControl\jalousieControl\src\dspAPI.h
+
+INCLUDEPATH += \
+             C:\Users\user\Desktop\programing\MCU\STM32\jalousieControl\jalousieControl\src\
