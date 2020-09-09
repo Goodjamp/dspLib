@@ -10,29 +10,29 @@
 
 static inline float dspCalcSincFirLpCoeff(FilterConfig config, uint32_t index)
 {
-    float arg =  2 * M_PI * (1 / (config.fs)) * (index - ((float)config.q / 2) + 0.5) * config.df;
-    return sin(arg) / arg;
+    float arg =  2 * S_PI * (1 / (config.fs)) * (index - ((float)config.q / 2) + 0.5F) * config.df;
+    return sinf(arg) / arg;
 }
 
 static inline float dspCalcBlackmanCoef(FilterConfig config, uint32_t index){
-	return 0.42 - 0.5 * cosf(2 * M_PI * index / (config.q - 1))
-	            + 0.08 * cosf(4 * M_PI * index / (config.q - 1));
+    return 0.42F - 0.5F * cosf(2 * S_PI * index / (config.q - 1))
+                + 0.08F * cosf(4 * S_PI * index / (config.q - 1));
 }
 
 
 static inline float dspCalchHammingCoef(FilterConfig config, uint32_t index){
-	return 0.54 - 0.46 * cosf(2 * M_PI * index / (config.q - 1));
+    return 0.54F - 0.46F * cosf(2 * S_PI * index / (config.q - 1));
 }
 
 static inline float dspCalcNuttallCoef(FilterConfig config, uint32_t index){
-	return 0.355768 - 0.48829 * cosf(2 * M_PI * index / (config.q - 1))
-	                + 0.14128 * cosf(4 * M_PI * index / (config.q - 1))
-	                - 0.01168 * cosf(6 * M_PI * index / (config.q - 1));
+    return 0.355768F - 0.48829F * cosf(2 * S_PI * index / (config.q - 1))
+                    + 0.14128F * cosf(4 * S_PI * index / (config.q - 1))
+                    - 0.01168F * cosf(6 * S_PI * index / (config.q - 1));
 }
 
 static float dspCalcCoeff(FilterConfig filtrConfig, uint32_t index)
 {
-    float coeff;
+    float coeff = 0;
     switch(filtrConfig.type) {
     case LOW_PATH:
         coeff = dspCalcSincFirLpCoeff(filtrConfig, index);
@@ -136,7 +136,7 @@ bool dspInitFiltr(FiltrationHandler *handler,
     for(uint32_t k = 0; k < filtrConfig.q; k++) {
         coeffBuff[k] = (int32_t)(dspCalcCoeff(filtrConfig, k) * handler->scallingCoeff);
     }
-    handler->scallingCoeff = (int32_t)(handler->scallingCoeff * 2.0 * M_PI);
+    handler->scallingCoeff = (int32_t)(handler->scallingCoeff * 2.0 * S_PI);
     /***********Initializations filter handler*****************************/
     handler->q     = filtrConfig.q;
     handler->first = buff;

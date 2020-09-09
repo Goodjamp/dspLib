@@ -4,6 +4,8 @@
 #include "stdint.h"
 #include "stdbool.h"
 
+#define S_PI 3.1415927410125732421875F
+
 typedef enum {
     LOW_PATH,
     BAND_PATH,
@@ -23,13 +25,13 @@ typedef enum {
 }WindowType;
 
 typedef struct FilterConfig {
-    FirFilterType     type;
+    FirFilterType type;
     FirFilterCalcType calcType;
-    WindowType        windowType;
-    float             f0;  //central frequency, Gz
-    float             fs;  //sampling rate, Gz
-    float             df;  //band with, Gz
-    uint32_t          q;   // filter order
+    WindowType windowType;
+    float f0;  //central frequency, Gz
+    float fs;  //sampling rate, Gz
+    float df;  //band with, Gz
+    uint32_t q;   // filter order
 }FilterConfig;
 
 typedef struct FiltrationHandler {
@@ -38,7 +40,7 @@ typedef struct FiltrationHandler {
     int32_t *write;  // write pointer of buff
     int32_t *coeff;  // filter coefficients
     uint32_t q;       // filter order
-    int32_t  scallingCoeff;
+    int32_t scallingCoeff;
 } FiltrationHandler;
 
 typedef struct RollingAverageHandler {
@@ -53,12 +55,12 @@ typedef struct RollingAverageHandler {
 } RollingAverageHandler;
 
 
-bool    dspInitFiltr(FiltrationHandler *handler,
+bool dspInitFiltr(FiltrationHandler *handler,
                      FilterConfig filtrConfig,
                      int32_t coeffBuff[],
                      int32_t buff[],
                      uint32_t maxInput);
-bool    dspFiltrationReset(FiltrationHandler *filtrationHandler);
+bool dspFiltrationReset(FiltrationHandler *filtrationHandler);
 int32_t dspFiltration(FiltrationHandler *filtrationHandler, int32_t value);
 bool dspInitRollingAverage(RollingAverageHandler *handler,
                            int32_t averageSize,

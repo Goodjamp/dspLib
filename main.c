@@ -3,7 +3,7 @@
 
 #include "dspAPI.h"
 
-#define FIR_Q   1024
+#define FIR_Q   64
 #define MAX_ADC 4095
 
 
@@ -13,7 +13,7 @@ int main()
         .type = LOW_PATH,
         .calcType = SINC,
         .windowType = WITHOUT_WINDOW,
-        .df = 10,
+        .df = 100,
         .fs = 2500,
         .q  = FIR_Q,
     };
