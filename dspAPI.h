@@ -26,9 +26,9 @@ typedef struct FilterConfig {
     FirFilterType     type;
     FirFilterCalcType calcType;
     WindowType        windowType;
-    double            f0;  //central frequency, Gz
-    double            fs;  //sampling rate, Gz
-    double            df;  //band with, Gz
+    float             f0;  //central frequency, Gz
+    float             fs;  //sampling rate, Gz
+    float             df;  //band with, Gz
     uint32_t          q;   // filter order
 }FilterConfig;
 
@@ -41,6 +41,17 @@ typedef struct FiltrationHandler {
     int32_t  scallingCoeff;
 } FiltrationHandler;
 
+typedef struct RollingAverageHandler {
+    int32_t cnt;  // first element of rezults buff
+    int32_t maxIndex;
+    bool isFull;   // last element of rezults buff
+    int32_t summ;  // write pointer of buff
+    int32_t average;
+    int32_t *buff;
+    uint32_t beginPos;
+    uint32_t endPos;
+} RollingAverageHandler;
+
 
 bool    dspInitFiltr(FiltrationHandler *handler,
                      FilterConfig filtrConfig,
@@ -49,5 +60,10 @@ bool    dspInitFiltr(FiltrationHandler *handler,
                      uint32_t maxInput);
 bool    dspFiltrationReset(FiltrationHandler *filtrationHandler);
 int32_t dspFiltration(FiltrationHandler *filtrationHandler, int32_t value);
+bool dspInitRollingAverage(RollingAverageHandler *handler,
+                           int32_t averageSize,
+                           int32_t buff[]);
+bool dspResetRollingAverage(RollingAverageHandler *handler);
+int32_t dspRollingAverageAdd(RollingAverageHandler *handler, int32_t value);
 
 #endif
