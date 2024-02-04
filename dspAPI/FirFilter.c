@@ -3,34 +3,32 @@
 #include "stdio.h"
 #include "string.h"
 
-#include "dspAPI.h"
-#define  MAX_INT8 ((uint8_t)(0 - 1) >> 1)
-#define  MAX_INT16 ((uint16_t)(0 - 1) >> 1)
-#define  MAX_INT32 ((uint32_t)(0 - 1) >> 1)
+#include "DspGeneric.h"
+#include "FirFilter.h"
 
-static inline float dspCalcSincFirLpCoeff(FilterConfig config, uint32_t index)
+static inline float dspCalcSincFirLpCoeff(FirFilterConfig config, uint32_t index)
 {
     float arg =  2 * S_PI * (1 / (config.fs)) * (index - ((float)config.q / 2) + 0.5F) * config.df;
     return sinf(arg) / arg;
 }
 
-static inline float dspCalcBlackmanCoef(FilterConfig config, uint32_t index){
+static inline float dspCalcBlackmanCoef(FirFilterConfig config, uint32_t index){
     return 0.42F - 0.5F * cosf(2 * S_PI * index / (config.q - 1))
                 + 0.08F * cosf(4 * S_PI * index / (config.q - 1));
 }
 
 
-static inline float dspCalchHammingCoef(FilterConfig config, uint32_t index){
+static inline float dspCalchHammingCoef(FirFilterConfig config, uint32_t index){
     return 0.54F - 0.46F * cosf(2 * S_PI * index / (config.q - 1));
 }
 
-static inline float dspCalcNuttallCoef(FilterConfig config, uint32_t index){
+static inline float dspCalcNuttallCoef(FirFilterConfig config, uint32_t index){
     return 0.355768F - 0.48829F * cosf(2 * S_PI * index / (config.q - 1))
                     + 0.14128F * cosf(4 * S_PI * index / (config.q - 1))
                     - 0.01168F * cosf(6 * S_PI * index / (config.q - 1));
 }
 
-static float dspCalcCoeff(FilterConfig filtrConfig, uint32_t index)
+static float dspCalcCoeff(FirFilterConfig filtrConfig, uint32_t index)
 {
     float coeff = 0;
     switch(filtrConfig.type) {
@@ -56,60 +54,15 @@ static float dspCalcCoeff(FilterConfig filtrConfig, uint32_t index)
         break;
     default: break;
     }
+
     return coeff;
 }
 
-bool dspInitRollingAverage(RollingAverageHandler *handler,
-                           int32_t averageSize,
-                           int32_t buff[])
-{
-    if(!handler) {
-        return false;
-    }
-    if(averageSize == 0) {
-        return false;
-    }
-    handler->average = 0;
-    handler->cnt  = averageSize;
-    handler->isFull = false;
-    handler->summ = 0;
-    handler->buff = buff;
-    handler->beginPos = 0;
-    handler->endPos = 1;
-    memset((uint8_t*)buff, 0, averageSize * sizeof(int32_t));
-    return true;
-}
-
-bool dspResetRollingAverage(RollingAverageHandler *handler)
-{
-    if(!handler) {
-        return false;
-    }
-    handler->average = 0;
-    handler->summ = 0;
-    handler->beginPos = 0;
-    handler->endPos = 1;
-    memset((uint8_t*)handler->buff, 0, handler->cnt * sizeof(int32_t));
-    return true;
-}
-
-int32_t dspRollingAverageAdd(RollingAverageHandler *handler,
-                             int32_t value)
-{
-    handler->summ -= handler->buff[handler->endPos];
-    handler->summ += value;
-    handler->endPos++;
-    handler->endPos &= handler->maxIndex;
-    handler->beginPos++;
-    handler->beginPos &= handler->maxIndex;
-    return handler->average = handler->summ / handler->cnt;
-}
-
-bool dspInitFiltr(FiltrationHandler *handler,
-                  FilterConfig filtrConfig,
-                  int32_t coeffBuff[],
-                  int32_t buff[],
-                  uint32_t maxInput)
+bool firFilterInit(FirFilterHandler *handler,
+                   FirFilterConfig filtrConfig,
+                   int32_t coeffBuff[],
+                   int32_t buff[],
+                   uint32_t maxInput)
 {
     /******************Calculate scaling coefficient******************/
     float   summCoeffNegative = 0;
@@ -150,17 +103,19 @@ bool dspInitFiltr(FiltrationHandler *handler,
         handler->coeff[k] = handler->coeff[handler->q - 1 - k];
         handler->coeff[handler->q - 1 - k] = temp;
     }
+
     return true;
 }
 
-bool dspFiltrationReset(FiltrationHandler *handler)
+bool firFilterReset(FirFilterHandler *handler)
 {
     handler->write = handler->first;
     memset(handler->first, 0, handler->q);
+
     return true;
 }
 
-int32_t dspFiltration(FiltrationHandler *handler, int32_t value)
+int32_t firFilterFiltration(FirFilterHandler *handler, int32_t value)
 {
     *handler->write++ = value;
     if(handler->write > handler->last) {
@@ -176,5 +131,6 @@ int32_t dspFiltration(FiltrationHandler *handler, int32_t value)
     while(valueBuff < handler->write) {
         rez += (*valueBuff++) * (*coeff++);
     }
+
     return (rez / handler->scallingCoeff);
 }
