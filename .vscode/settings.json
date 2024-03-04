@@ -1,9 +1,0 @@
-{
-    "files.associations": {
-        "firfilter.h": "c",
-        "stdbool.h": "c",
-        "rollingaverage.h": "c",
-        "stdint.h": "c",
-        "dspgeneric.h": "c"
-    }
-}
