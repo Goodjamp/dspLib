@@ -6,12 +6,22 @@
 #include "Fft.h"
 #include "FftRotateCoeff.h"
 
-bool fftInit(FftHandler *handler, GetMemCb getMemCb)
+FftStatus fftInit(FftHandler *h, GetMemCb getMemCb)
 {
-    handler->getMemCb = getMemCb;
+    if (h == NULL) {
+        return FFT_HANDLER_NULL_ERROR;
+    }
+
+    if (getMemCb == NULL) {
+        return FFT_GET_MEM_UNDEFINED_ERROR;
+    }
+
+    h->getMemCb = getMemCb;
+
+    return FFT_RES_OK;
 }
 
-uint8_t revers(uint8_t arg)
+static uint8_t revers(uint8_t arg)
 {
     uint8_t result = 0;
 
@@ -46,7 +56,29 @@ void printArray(FftRes *data, uint32_t size)
     printf("\n");
 }
 
-bool fftTransform(FftHandler *handler, int16_t *inData,
+FftStatus fftPrepare(FftHandler *h, uint16_t size)
+{
+    if (h == NULL) {
+        return FFT_HANDLER_NULL_ERROR;
+    }
+    const FftRotateCoef *w = fftGetCoeff();
+    
+    h->scalePow = getLog2(w->scaleCoeff);
+
+    /*
+     * The index of rotator. This index depends on the base rotator table size.
+     * Basikly we need devide the size of the table on 2. But on the algorithm below, we skip
+     * firs 2 radix-2 cascads, so we skip 2 device operation.
+     */
+    h->wStep = w->size / 8;
+
+    return FFT_RES_OK;
+}
+
+/*
+ * The code below implement the Radix-2 FFT algorithm with real input data and for the integer calculation 
+ */
+FftStatus fftTransform(FftHandler *h, int16_t *inData,
                   uint16_t size, FftRes **res)
 {
     FftRes *lRes;
@@ -63,7 +95,7 @@ bool fftTransform(FftHandler *handler, int16_t *inData,
         return false;
     }
 
-    lRes = (FftRes *)handler->getMemCb(sizeof(FftRes) * size);
+    lRes = (FftRes *)h->getMemCb(sizeof(FftRes) * size);
     memset(*res, 0, sizeof(FftRes) * size);
     
     uint32_t log2 = 8 - getLog2(size) + 1;
@@ -77,8 +109,8 @@ bool fftTransform(FftHandler *handler, int16_t *inData,
     /*
      * Make first cascade calculation without multiplying of the complex  numbers
      */
-    float tempFI = 0;
-    float tempSI = 0;
+    int32_t tempFI = 0;
+    int32_t tempSI = 0;
     for (uint32_t k = 0; k < size; k += 2) {
         tempFI = lRes[k].re;
         lRes[k].re = lRes[k].re + lRes[k + 1].re;
@@ -142,41 +174,37 @@ bool fftTransform(FftHandler *handler, int16_t *inData,
     /*
      * Calculating the next cascades of the FFT with using complex multiplying
      */
-    uint32_t wStep = w->size / 8;
     uint32_t m = size / 8;
     uint32_t sizeHalf = size / 2;
-    uint32_t wI;
+    uint32_t wI; // temp index of rotator
+
     for (uint32_t n = 4; n <= sizeHalf; n *= 2) { // n - the half of size of set on the current cascade 
         for (uint32_t k = 0; k < m; k++) { // m - the number of set on the current cascade
             fI = 2 * n * k;
             sI = fI + n;
             for (uint32_t i = 0; i < n; i++) {  // i - the index of item on the curent set
-                wI = i * wStep;
+                wI = i * h->wStep;
                 /*
                  * Calculate Re part 
                  */
-                tempFI = lRes[fI].re;// * w->scaleCoeff;
-                lRes[fI].re = tempFI + (w->re[wI] * lRes[sI].re - w->im[wI] * lRes[sI].im) / w->scaleCoeff;
+                tempFI = lRes[fI].re;
+                lRes[fI].re = tempFI + ((w->re[wI] * lRes[sI].re) >> h->scalePow) - ((w->im[wI] * lRes[sI].im) >> h->scalePow);
                 tempSI = lRes[sI].re;  // accumulate the lRes[sI].re to use for the calculation Im part
                 lRes[sI].re = 2 * tempFI - lRes[fI].re;
-                //lRes[fI].re /= w->scaleCoeff;
-                //lRes[sI].re /= w->scaleCoeff;
  
                 /*
                  * Calculate Im part
                  */
                 tempFI = lRes[fI].im;// * w->scaleCoeff;
-                lRes[fI].im = tempFI + (w->re[wI] * lRes[sI].im + w->im[wI] * tempSI) / w->scaleCoeff;
+                lRes[fI].im = tempFI + ((w->re[wI] * lRes[sI].im) >> h->scalePow) + ((w->im[wI] * tempSI) >> h->scalePow);
                 lRes[sI].im = 2 * tempFI - lRes[fI].im;
-                //lRes[fI].im /= w->scaleCoeff;
-                //lRes[sI].im /= w->scaleCoeff;
 
                 fI++;
                 sI++;
             }
         }
         m /= 2;
-        wStep /= 2;
+        h->wStep /= 2;
         printArray(lRes, size);
     }
 

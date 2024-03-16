@@ -56,7 +56,7 @@ void testFft(void)
     float realData[] = {0.3535, 0.3535, 0.6464, 1.0607, 0.3535, -1.0607, -1.3535, -0.3535};
     int16_t inData[ARRAY_SIZE(realData)];
     FftRes *res;
-    bool result;
+    FftStatus result;
 
     /*
      * Scale input data to the integer value
@@ -64,11 +64,13 @@ void testFft(void)
     for (int32_t k = 0; k < sizeof(realData) / sizeof(realData[0]); k++) {
         inData[k] = 10000 * realData[k];
     }
-
+    
     result = fftInit(&fftH, fftGetMem);
-    printf("fftInit result = %s\n", result ? "true" : "false");
+    printf("fftInit result = %i\n", result);
+    result = fftPrepare(&fftH,  ARRAY_SIZE(inData));
+    printf("fftInit result = %i\n", result);
     result = fftTransform(&fftH, inData, ARRAY_SIZE(inData), &res);
-    printf("fftTransform result = %s\n", result ? "true" : "false");
+    printf("fftTransform result = %u\n", result);
 }
 
 int main()

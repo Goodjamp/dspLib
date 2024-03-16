@@ -2,7 +2,7 @@ import math
 import string
 import sys
 
-scaleCoeff = 1000
+scaleCoeff = 1024
 coeff = 0.0
 
 if len(sys.argv) != 3:
